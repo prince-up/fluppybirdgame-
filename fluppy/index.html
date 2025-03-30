@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Flappy Bird Game</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            background: url('backgfluupy.png') no-repeat center/cover;
+            overflow: hidden;
+        }
+        #game-container {
+            position: relative;
+            width: 500px;
+            height: 700px;
+            overflow: hidden;
+        }
+        #bird {
+            position: absolute;
+            top: 250px;
+            left: 50px;
+            width: 50px;
+            height: 50px;
+            background: url('bird.png') no-repeat center/contain;
+            transition: transform 0.1s;
+        }
+        .pipe {
+            position: absolute;
+            width: 70px;
+            background: green;
+        }
+        #score {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            font-size: 36px;
+            color: white;
+            font-weight: bold;
+        }
+        #game-over {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0, 0, 0, 0.8);
+            color: white;
+            padding: 20px;
+            font-size: 24px;
+            display: none;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <div id="game-container">
+        <div id="bird"></div>
+        <div id="score">0</div>
+        <div id="game-over">
+            <p>Game Over!</p>
+            <button onclick="restartGame()">Restart</button>
+        </div>
+    </div>
+    <audio id="jump-sound" src="jump.mp3"></audio>
+    <audio id="score-sound" src="score.mp3"></audio>
+    <audio id="hit-sound" src="hit.mp3"></audio>
+    <script>
+        const gameContainer = document.getElementById('game-container');
+        const bird = document.getElementById('bird');
+        const scoreElement = document.getElementById('score');
+        const gameOverScreen = document.getElementById('game-over');
+        const jumpSound = document.getElementById('jump-sound');
+        const scoreSound = document.getElementById('score-sound');
+        const hitSound = document.getElementById('hit-sound');
+        
+        let birdTop = 250;
+        let gravity = 2;
+        let jumpStrength = 50;
+        let gameInterval;
+        let pipeInterval;
+        let score = 0;
+        let pipeGap = 180;
+        
+        function jump() {
+            birdTop -= jumpStrength;
+            bird.style.top = birdTop + 'px';
+            bird.style.transform = 'rotate(-20deg)';
+            jumpSound.play();
+        }
+        document.addEventListener('keydown', jump);
+        document.addEventListener('touchstart', jump);
+        
+        function applyGravity() {
+            birdTop += gravity;
+            bird.style.top = birdTop + 'px';
+            bird.style.transform = 'rotate(20deg)';
+            if (birdTop >= 650 || birdTop <= 0) endGame();
+        }
+        
+        function createPipe() {
+            const pipeHeight = Math.random() * (300 - pipeGap) + 100;
+            const pipeTop = document.createElement('div');
+            const pipeBottom = document.createElement('div');
+            pipeTop.classList.add('pipe');
+            pipeBottom.classList.add('pipe');
+
+            pipeTop.style.height = `${pipeHeight}px`;
+            pipeBottom.style.height = `${700 - pipeHeight - pipeGap}px`;
+            pipeTop.style.left = pipeBottom.style.left = '500px';
+            pipeTop.style.top = '0';
+            pipeBottom.style.bottom = '0';
+
+            gameContainer.appendChild(pipeTop);
+            gameContainer.appendChild(pipeBottom);
+            
+            let pipeLeft = 500;
+            let pipeSpeed = Math.random() * 2 + 3;
+            let hasScored = false;
+            
+            const pipeMoveInterval = setInterval(() => {
+                pipeLeft -= pipeSpeed;
+                pipeTop.style.left = `${pipeLeft}px`;
+                pipeBottom.style.left = `${pipeLeft}px`;
+
+                if (
+                    pipeLeft < 90 && pipeLeft > 10 &&
+                    (birdTop < pipeHeight || birdTop + 40 > pipeHeight + pipeGap)
+                ) {
+                    endGame();
+                }
+
+                if (pipeLeft < 50 && !hasScored) {
+                    score++;
+                    scoreElement.textContent = score;
+                    scoreSound.play();
+                    hasScored = true;
+                    if (score % 5 === 0 && pipeGap > 100) pipeGap -= 10;
+                }
+                
+                if (pipeLeft < -70) {
+                    clearInterval(pipeMoveInterval);
+                    gameContainer.removeChild(pipeTop);
+                    gameContainer.removeChild(pipeBottom);
+                }
+            }, 20);
+        }
+        
+        function endGame() {
+            clearInterval(gameInterval);
+            clearInterval(pipeInterval);
+            hitSound.play();
+            gameOverScreen.style.display = 'block';
+        }
+        
+        function restartGame() {
+            window.location.reload();
+        }
+        
+        function startGame() {
+            gameInterval = setInterval(applyGravity, 20);
+            pipeInterval = setInterval(createPipe, 2000);
+        }
+        
+        startGame();
+    </script>
+</body>
+</html>
